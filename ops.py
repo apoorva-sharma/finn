@@ -20,3 +20,16 @@ def conv2d(input_, output_dim, hh=3, ww=3, stride_h =1, stride_w=1, stddev=0.02,
 def bn(x, phase, center=True, scale=True, name = 'batch_norm'):
     return tf.contrib.layers.batch_norm(inputs = x, center=center, scale=scale,
                                         is_training=phase, scope=name, data_format = 'NHWC')
+
+def linear(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, with_w=False):
+  shape = input_.get_shape().as_list()
+
+  with tf.variable_scope(scope or "Linear"):
+    matrix = tf.get_variable("Matrix", [shape[1], output_size], tf.float32,
+                 tf.random_normal_initializer(stddev=stddev))
+    bias = tf.get_variable("bias", [output_size],
+      initializer=tf.constant_initializer(bias_start))
+    if with_w:
+      return tf.matmul(input_, matrix) + bias, matrix, bias
+    else:
+      return tf.matmul(input_, matrix) + bias
