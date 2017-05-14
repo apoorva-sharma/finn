@@ -39,10 +39,39 @@ def loadVideoFromPath(path):
 
     return decoder.getVideo()
 
+def generateDataSet(video_path):
+    frames = loadVideoFromPath(video_path)
+    downsampled = frames[::2,:,:,:]
+
+    train_befores = downsampled[:-2,:,:,:]
+    train_middles = downsampled[1:-1,:,:,:]
+    train_afters = downsampled[2:,:,:,:]
+
+    test_befores = downsampled[:-1,:,:,:]
+    test_middles = frames[1::2,:,:,:]
+    test_afters = downsampled[1:,:,:,:]
+
+    train_doublets = np.concatenate((train_befores, train_afters), axis=3)
+    train_triplets = np.concatenate((train_befores, train_middles, train_afters), axis=3)
+
+    test_doublets = np.concatenate((test_befores, test_afters), axis=3)
+    test_targets = test_middles
+
+    data = {"train_doublets": train_doublets, "train_triplets": train_triplets,
+            "test_doublets": test_doublets, "test_targets": test_targets}
+
+    return data
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    video = loadVideoFromPath("datasets/bus_cif.y4m")
-    imgplt = plt.imshow(video[5,:,:,:])
+    data = generateDataSet("datasets/bus_cif.y4m")
+    f, axarr = plt.subplots(2, 2)
+    axarr[0,0].imshow( 0.5*( data["train_triplets"][0,:,:,0:3] + data["train_triplets"][0,:,:,6:9] ) )
+    axarr[1,0].imshow( data["train_triplets"][0,:,:,3:6] )
+    axarr[0,1].imshow( 0.5*( data["test_doublets"][0,:,:,0:3] + data["test_doublets"][0,:,:,3:6] ) )
+    axarr[1,1].imshow( data["test_targets"][0,:,:,:] )
+
+    #imgplt = plt.imshow(video[5,:,:,:])
     plt.show()
