@@ -188,7 +188,7 @@ class Finn(object):
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss %.8f, g_loss %.8f0" \
                       % (epoch, idx, batch_idx, time.time() - start_time, errD_fake+errD_real, errG))
 
-            summary_str = self.sess.run([self.img_sum],
+            summary_str = self.sess.run(self.img_sum,
                                            feed_dict = {
                                                self.doublets: train_doublets[0:self.batch_size],
                                                self.is_training: False

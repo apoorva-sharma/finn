@@ -17,6 +17,7 @@ class Config:
         self.learning_rate = learning_rate
         self.beta1 = beta1
         self.batch_size = batch_size
+        self.checkpoint_dir = './chkpts'
 
 
 
