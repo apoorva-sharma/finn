@@ -10,7 +10,7 @@ from ops import *
 from datasets import *
 
 class Finn(object):
-    def __init__(self, sess, df_dim, batch_size, writer_path, filename, video_path, input_height, input_width):
+    def __init__(self, sess, df_dim, batch_size, writer_path, video_path):
         self.df_dim = df_dim
         self.batch_size = batch_size
 
@@ -18,8 +18,16 @@ class Finn(object):
         self.writer_path = writer_path
         self.filename = 'abc'
         self.video_path = video_path
-        self.input_height = input_height
-        self.input_width = input_width
+
+
+        data = generateDataSet(self.video_path)
+        self.train_doublets = data["train_doublets"]
+        self.train_triplets = data["train_tripts"]
+        self.test_doublets = data["test_doublets"]
+        self.test_targets = data["test_targets"]
+
+        self.input_height = self.train_doublets.shape[1]
+        self.input_width = self.train_doublets.shape[2]
         self.dataset_name = 'abc'
 
         self.gen_layer_depths = [16, 32, 64, 128]
@@ -118,13 +126,15 @@ class Finn(object):
         self.img_sum = tf.summary.merge([self.G_image, self.Z_image])
         self.writer = tf.summary.FileWriter(self.writer_path + "/" + self.filename, self.sess.graph)
 
-        data = generateDataSet(self.video_path)
-        train_doublets = data["train_doublets"]
-        train_doublets_idx = np.random.shuffle(np.arange(train_doublets.shape[0]))
-        train_triplets = data["train_tripts"]
+
+        train_doublets = self.train_doublets
+        train_triplets = self.train_triplets
+        test_doublets = self.test_doublets
+        test_triplets = self.test_triplets
+
         train_triplets_idx = np.random.shuffle(np.arange(train_triplets.shape[0]))
-        test_doublets = data["test_doublets"]
-        test_targets = data["test_targets"]
+        train_doublets_idx = np.random.shuffle(np.arange(train_doublets.shape[0]))
+
 
         counter = 1
         start_time = time.time()
