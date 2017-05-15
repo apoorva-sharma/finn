@@ -10,16 +10,16 @@ from ops import *
 from datasets import *
 
 class Finn(object):
-    def __init__(self):
-        self.df_dim = 2
-        self.batch_size = 12
+    def __init__(self, sess, df_dim, batch_size, writer_path, filename, video_path, input_height, input_width):
+        self.df_dim = df_dim
+        self.batch_size = batch_size
 
         self.sess = sess
-        self.writer_path = './trials'
+        self.writer_path = writer_path
         self.filename = 'abc'
-        self.video_path = './videos'
-        self.input_height = 5
-        self.input_width = 5
+        self.video_path = video_path
+        self.input_height = input_height
+        self.input_width = input_width
         self.dataset_name = 'abc'
 
         self.gen_layer_depths = [16, 32, 64, 128]
@@ -64,7 +64,7 @@ class Finn(object):
                 current_inputdepth = 2*outputdepth
 
             outputdepth = 3 # final image is 3 channel
-            return tanh_deconv_layer(current_input, rev_filter_sizes[-1], current_inputdepth, outputdepth, name=('g_tanh_deconv') )
+            return tanh_deconv_block(current_input, rev_filter_sizes[-1], current_inputdepth, outputdepth, name=('g_tanh_deconv') )
 
 
     def build_model(self):
@@ -75,8 +75,8 @@ class Finn(object):
         self.triplets = tf.placeholder(tf.float32, [self.batch_size] + triplet_dims, name = 'real_images')
 
         self.G = self.generator(self.doublets)
-        self.D_real, self.D_real_logits = self.descriminator(self.triplets, reuse = False)
-        self.D_fake, self.D_fake_logits = self.descriminator(self.triplets, reuse=True)
+        self.D_real, self.D_real_logits = self.discriminator(self.triplets, reuse = False)
+        self.D_fake, self.D_fake_logits = self.discriminator(self.triplets, reuse=True)
 
         self.d_real_sum = tf.summary.histogram("d_real", self.D_real)
         self.d_fake_sum = tf.summary.histogram("d_fake", self.D_fake)
