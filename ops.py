@@ -32,7 +32,7 @@ def deconv_block(input_, filter_size, output_depth, name="deconv_block"):
         output_shape = [ tf.shape(input_)[0], 2*tf.shape(input_)[1], 2*tf.shape(input_)[2], output_depth]
         deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_depth,
                                         strides=[1, 2, 2, 1], padding='SAME')
-        biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
+        biases = tf.get_variable('biases', [output_depth], initializer=tf.constant_initializer(0.0))
         deconv = tf.reshape(tf.nn.bias_add(deconv,biases), deconv.get_shape())
 
         h2 = lrelu( conv2d(input_, output_depth, filter_size, filter_size, name="conv2d1") )
@@ -47,7 +47,7 @@ def tanh_deconv_block(input_, filter_size, output_depth, name="deconv_block"):
         output_shape = [ tf.shape(input_)[0], 2*tf.shape(input_)[1], 2*tf.shape(input_)[2], output_depth]
         deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_depth,
                                         strides=[1, 2, 2, 1], padding='SAME')
-        biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
+        biases = tf.get_variable('biases', [output_depth], initializer=tf.constant_initializer(0.0))
         deconv = tf.reshape(tf.nn.bias_add(deconv,biases), deconv.get_shape())
 
         h2 = tf.nn.tanh( conv2d(input_, output_depth, filter_size, filter_size, name="conv2d1") )
