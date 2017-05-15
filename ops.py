@@ -17,6 +17,45 @@ def conv2d(input_, output_dim, hh=3, ww=3, stride_h =1, stride_w=1, stddev=0.02,
 
         return conv
 
+def conv_block(input_, filter_size, output_depth, name="conv_block"):
+    with tf.variable_scope(name):
+        h1 = lrelu( conv2d(input_, output_depth, filter_size, filter_size, name="conv2d1") )
+        h2 = lrelu( conv2d(h1, output_depth, filter_size, filter_size, name="conv2d2") )
+
+        return tf.nn.max_pool(h2, ksize=[1,2,2,1], strides=[1,2,2,1], padding="SAME", data_format="NHWC")
+
+def deconv_block(input_, filter_size, output_depth, name="deconv_block"):
+    with tf.variable_scope(name):
+        w = tf.get_variable("w", [2, 2, input_.get_shape()[-1], output_depth],
+                            initializer=tf.truncated_normal_initializer(stddev=0.02))
+
+        output_shape = [ tf.shape(input_)[0], 2*tf.shape(input_)[1], 2*tf.shape(input_)[2], output_depth]
+        deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_depth,
+                                        strides=[1, 2, 2, 1], padding='SAME')
+        biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
+        deconv = tf.reshape(tf.nn.bias_add(deconv,biases), deconv.get_shape())
+
+        h2 = lrelu( conv2d(input_, output_depth, filter_size, filter_size, name="conv2d1") )
+
+        return h2
+
+def tanh_deconv_block(input_, filter_size, output_depth, name="deconv_block"):
+    with tf.variable_scope(name):
+        w = tf.get_variable("w", [2, 2, input_.get_shape()[-1], output_depth],
+                            initializer=tf.truncated_normal_initializer(stddev=0.02))
+
+        output_shape = [ tf.shape(input_)[0], 2*tf.shape(input_)[1], 2*tf.shape(input_)[2], output_depth]
+        deconv = tf.nn.conv2d_transpose(input_, w, output_shape=output_depth,
+                                        strides=[1, 2, 2, 1], padding='SAME')
+        biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))
+        deconv = tf.reshape(tf.nn.bias_add(deconv,biases), deconv.get_shape())
+
+        h2 = tf.nn.tanh( conv2d(input_, output_depth, filter_size, filter_size, name="conv2d1") )
+
+        return h2
+
+
+
 def bn(x, phase, center=True, scale=True, name = 'batch_norm'):
     return tf.contrib.layers.batch_norm(inputs = x, center=center, scale=scale,
                                         is_training=phase, scope=name, data_format = 'NHWC')
