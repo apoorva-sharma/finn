@@ -94,8 +94,10 @@ class Finn(object):
 
         self.d_real_sum = tf.summary.histogram("d_real", self.D_real)
         self.d_fake_sum = tf.summary.histogram("d_fake", self.D_fake)
-        self.G_image = tf.summary.image("G", self.G)
-        self.Z_image = tf.summary.image("Z", self.doublets)
+        self.num_images = self.batch_size
+        self.G_image = tf.summary.image("G", self.G, max_outputs=self.num_images)
+        self.before_image = tf.summary.image("Z1", self.before, max_outputs=self.num_images)
+        self.after_image = tf.summary.image("Z2", self.after, max_outputs=self.num_images)
 
         self.d_loss_real = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_real_logits, labels=tf.ones_like(self.D_real)))
