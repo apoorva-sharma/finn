@@ -131,7 +131,7 @@ class Finn(object):
 
         self.g_sum = tf.summary.merge([self.g_loss_sum, self.d_loss_sum_fake, self.d_fake_sum])
         self.d_sum = tf.summary.merge([self.d_loss_sum_real, self.d_real_sum, self.d_loss_sum])
-        self.img_sum = tf.summary.merge([self.G_image, self.Z_image])
+        self.img_sum = tf.summary.merge([self.G_image, self.before_image, self.after_image])
         self.writer = tf.summary.FileWriter(self.writer_path + "/" + self.filename, self.sess.graph)
 
 
