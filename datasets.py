@@ -1,5 +1,6 @@
 import y4m
 import numpy as np
+import codecs
 
 YCbCr2RGB = np.array( [[1.164, 0., 1.793],
                        [1.164, -0.213, -0.533],
@@ -34,8 +35,9 @@ class Y4MDecoder:
 def loadVideoFromPath(path):
     decoder = Y4MDecoder()
     parser = y4m.Reader(decoder.incorporateFrame, verbose=False)
-    with open(path, 'r') as f:
-        parser.decode(f.read())
+    with open(path, 'rb') as f:
+        data = f.read()
+        parser.decode(data.decode('latin-1', errors='replace').encode('latin-1'))
 
     return decoder.getVideo()
 
