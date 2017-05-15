@@ -34,5 +34,5 @@ if __name__ == '__main__':
         writer_path = './summaries'
         video_path = './datasets/bus_cif.y4m'
         finn = Finn(sess, df_dim, batch_size, writer_path, video_path)
-
-
+        finn.build_model()
+        finn.train(cfg)
