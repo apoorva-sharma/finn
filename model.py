@@ -112,7 +112,8 @@ class Finn(object):
         self.d_real_sum = tf.summary.histogram("d_real", self.D_real)
         self.d_fake_sum = tf.summary.histogram("d_fake", self.D_fake)
         self.num_images = self.batch_size
-        self.G_image = tf.summary.image("G", self.G + self.mean_img, max_outputs=self.max_outputs)
+        self.G_image = tf.summary.image("G", tf.clip_by_value(self.G + self.mean_img, 0, 1), 
+            max_outputs=self.max_outputs)
         self.before_image = tf.summary.image("Z1", self.before + self.mean_img, max_outputs=self.max_outputs)
         self.after_image = tf.summary.image("Z2", self.after + self.mean_img, max_outputs=self.max_outputs)
 
@@ -241,7 +242,7 @@ class Finn(object):
                 self.save(config.checkpoint_dir, counter)
 
                 # Save images to file
-                G_img = self.sess.run(self.G + self.mean_img,
+                G_img = self.sess.run(tf.clip_by_value(self.G + self.mean_img,0,1),
                                            feed_dict = {
                                                self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
                                                self.is_training: True,
