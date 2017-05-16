@@ -18,7 +18,7 @@ class Config:
         self.beta1 = beta1
         self.batch_size = batch_size
         self.checkpoint_dir = './chkpts'
-        self.train_gan = True
+        self.train_gan = False
         self.image_dir = os.path.join(os.getcwd(),'images')
 
 
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         df_dim = 8
         batch_size = cfg.batch_size
         dropout_prob = 0.5
-        l1_weight = 1.
+        l1_weight = 1000.
         writer_path = './10pm'
         video_path = './datasets/bus_cif.y4m'
         finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, writer_path, video_path)

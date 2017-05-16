@@ -131,7 +131,7 @@ class Finn(object):
         self.d_loss = self.d_loss_fake + self.d_loss_real
 
         self.g_loss_sum = tf.summary.scalar("G_loss", self.g_loss)
-        self.g_loss_sum_l1 = tf.summary.scalar("G_loss", self.g_loss_l1)
+        self.g_loss_sum_l1 = tf.summary.scalar("G_loss_l1", self.g_loss_l1)
         self.d_loss_sum = tf.summary.scalar("D_loss", self.d_loss)
 
         t_vars = tf.trainable_variables()
@@ -222,7 +222,7 @@ class Finn(object):
                 errD_fake = self.d_loss_fake.eval({ self.doublets: batch_zs, self.is_training: True})
                 errD_real = self.d_loss_real.eval({ self.triplets: batch_images, self.is_training: True})
                 errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: True})
-                errG_l1 = self.g_loss_l1.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: False})
+                errG_l1 = self.g_loss_l1.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
 
 
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss %.8f, g_loss %.8f, g_loss_l1 %.8f" \
