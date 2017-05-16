@@ -122,7 +122,7 @@ class Finn(object):
         self.g_loss = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits, labels=tf.ones_like(self.D_fake)))
 
-        self.g_loss_total = tf.sum(-self.d_loss_fake, self.l1_weight*self.g_loss_l1)
+        self.g_loss_total = tf.add(-self.d_loss_fake, self.l1_weight*self.g_loss_l1)
 
         self.d_loss_sum_real = tf.summary.scalar("real_loss", self.d_loss_real)
         self.d_loss_sum_fake = tf.summary.scalar("fake_loss", self.d_loss_fake)
