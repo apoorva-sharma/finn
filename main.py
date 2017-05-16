@@ -35,8 +35,9 @@ if __name__ == '__main__':
         df_dim = 8
         batch_size = cfg.batch_size
         dropout_prob = 0.5
+        l1_weight = 1.
         writer_path = './7pm'
         video_path = './datasets/bus_cif.y4m'
-        finn = Finn(sess, df_dim, batch_size, dropout_prob, writer_path, video_path)
+        finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, writer_path, video_path)
         finn.build_model()
         finn.train(cfg)

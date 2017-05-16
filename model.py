@@ -11,10 +11,11 @@ from ops import *
 from datasets import *
 
 class Finn(object):
-    def __init__(self, sess, df_dim, batch_size, dropout_prob, writer_path, video_path):
+    def __init__(self, sess, df_dim, batch_size, dropout_prob, l1_weight, writer_path, video_path):
         self.df_dim = df_dim
         self.batch_size = batch_size
         self.dropout_prob = dropout_prob
+        self.l1_weight = l1_weight
 
         self.sess = sess
         self.writer_path = writer_path
@@ -121,6 +122,8 @@ class Finn(object):
         self.g_loss = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits, labels=tf.ones_like(self.D_fake)))
 
+        self.g_loss_total = tf.sum(-self.d_loss_fake, self.l1_weight*self.g_loss_l1)
+
         self.d_loss_sum_real = tf.summary.scalar("real_loss", self.d_loss_real)
         self.d_loss_sum_fake = tf.summary.scalar("fake_loss", self.d_loss_fake)
 
@@ -142,7 +145,7 @@ class Finn(object):
                                          ).minimize(self.g_loss_l1, var_list=self.g_vars)
 
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
-                                         ).minimize(-self.d_loss_fake, var_list=self.g_vars)
+                                         ).minimize(self.g_loss_total, var_list=self.g_vars) # -self.d_loss_fake
         d_optim = tf.train.AdamOptimizer(0.05*config.learning_rate, beta1=config.beta1
                                                     ).minimize(self.d_loss, var_list=self.d_vars)
 
@@ -203,7 +206,6 @@ class Finn(object):
                                                    })
                     self.writer.add_summary(summary_str, counter)
                 else:
-
                     # Update G Network
                     _, summary_str = self.sess.run([g_optim_l1, self.g_sum_l1],
                                                    feed_dict={
