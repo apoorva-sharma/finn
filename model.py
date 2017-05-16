@@ -11,13 +11,14 @@ from ops import *
 from datasets import *
 
 class Finn(object):
-    def __init__(self, sess, df_dim, batch_size, writer_path, video_path):
+    def __init__(self, sess, df_dim, batch_size, dropout_prob, writer_path, video_path):
         self.df_dim = df_dim
         self.batch_size = batch_size
+        self.dropout_prob = dropout_prob
 
         self.sess = sess
         self.writer_path = writer_path
-        self.filename = 'abc'
+        self.filename = 'yomama'
         self.video_path = video_path
 
 
@@ -58,7 +59,7 @@ class Finn(object):
             current_input = doublet
             current_inputdepth = doublet.shape[3]
             for i, outputdepth in enumerate(self.gen_layer_depths):
-                result = conv_block(current_input, self.gen_filter_sizes[i], outputdepth, name=('g_conv_block'+str(i)) )
+                result = conv_block(current_input, self.is_training, self.gen_filter_sizes[i], outputdepth, name=('g_conv_block'+str(i)) )
                 conv_outputs.append(result)
                 current_input = result
                 current_inputdepth = outputdepth
@@ -71,14 +72,17 @@ class Finn(object):
 
             # deconv portion
             for i, outputdepth in enumerate(rev_layer_depths[1:]): # reverse process exactly until last step
-                result = deconv_block(current_input, rev_filter_sizes[i], outputdepth, name=('g_deconv_block'+str(i)) )
-                # print( i, result.get_shape() )
+
+                result = deconv_block(current_input, self.is_training, rev_filter_sizes[i], outputdepth, name=('g_deconv_block'+str(i)) )
+                if i <= 4:
+                    result = tf.nn.dropout(result, self.dropout_prob)
+                print( i, result.get_shape() )
                 stack = tf.concat([result, rev_conv_outputs[i+1]], 3)
                 # print( i, stack.get_shape() )
                 current_input = stack
 
             outputdepth = 3 # final image is 3 channel
-            return tanh_deconv_block(current_input, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
+            return tanh_deconv_block(current_input, self.is_training, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
 
 
     def build_model(self):
@@ -139,7 +143,7 @@ class Finn(object):
 
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
                                          ).minimize(-self.d_loss_fake, var_list=self.g_vars)
-        d_optim = tf.train.GradientDescentOptimizer(config.learning_rate
+        d_optim = tf.train.AdamOptimizer(0.05*config.learning_rate, beta1=config.beta1
                                                     ).minimize(self.d_loss, var_list=self.d_vars)
 
         tf.global_variables_initializer().run()
@@ -211,9 +215,9 @@ class Finn(object):
 
                 counter += 1
 
-                errD_fake = self.d_loss_fake.eval({ self.doublets: batch_zs, self.is_training: False})
-                errD_real = self.d_loss_real.eval({ self.triplets: batch_images, self.is_training: False})
-                errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: False})
+                errD_fake = self.d_loss_fake.eval({ self.doublets: batch_zs, self.is_training: True})
+                errD_real = self.d_loss_real.eval({ self.triplets: batch_images, self.is_training: True})
+                errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: True})
                 errG_l1 = self.g_loss_l1.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: False})
 
 
@@ -223,7 +227,7 @@ class Finn(object):
             summary_str = self.sess.run(self.img_sum,
                                            feed_dict = {
                                                self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
-                                               self.is_training: False,
+                                               self.is_training: True,
                                                self.mean_placeholder: self.mean_img
                                            })
             self.writer.add_summary(summary_str, counter)
@@ -236,7 +240,7 @@ class Finn(object):
             G_img = self.sess.run(self.G + self.mean_img,
                                        feed_dict = {
                                            self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
-                                           self.is_training: False,
+                                           self.is_training: True,
                                            self.mean_placeholder: self.mean_img
                                        })
 

@@ -25,7 +25,7 @@ class Config:
 
 if __name__ == '__main__':
 
-    cfg = Config(epoch=30, learning_rate=.001, beta1=0.9, batch_size=4)
+    cfg = Config(epoch=10, learning_rate=.001, beta1=0.5, batch_size=4)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
@@ -34,8 +34,9 @@ if __name__ == '__main__':
 
         df_dim = 8
         batch_size = cfg.batch_size
-        writer_path = './summaries'
+        dropout_prob = 0.5
+        writer_path = './7pm'
         video_path = './datasets/bus_cif.y4m'
-        finn = Finn(sess, df_dim, batch_size, writer_path, video_path)
+        finn = Finn(sess, df_dim, batch_size, dropout_prob, writer_path, video_path)
         finn.build_model()
         finn.train(cfg)
