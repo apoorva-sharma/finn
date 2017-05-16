@@ -41,7 +41,7 @@ def deconv_block(input_, phase, filter_size, output_depth, name="deconv_block"):
         return h2
 
 
-def tanh_deconv_block(input_, filter_size, output_depth, name="deconv_block"):
+def tanh_deconv_block(input_, phase, filter_size, output_depth, name="deconv_block"):
     with tf.variable_scope(name):
         w = tf.get_variable("w", [2, 2, output_depth, input_.get_shape()[-1]],
                             initializer=tf.truncated_normal_initializer(stddev=0.02))

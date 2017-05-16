@@ -76,7 +76,7 @@ class Finn(object):
                 current_input = stack
 
             outputdepth = 3 # final image is 3 channel
-            return tanh_deconv_block(current_input, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
+            return tanh_deconv_block(current_input, self.is_training, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
 
 
     def build_model(self):
@@ -178,15 +178,15 @@ class Finn(object):
                 _, summary_str = self.sess.run([g_optim, self.g_sum],
                                                feed_dict={
                                                    self.doublets: batch_zs,
-                                                   self.is_training: False
+                                                   self.is_training: True
                                                })
                 self.writer.add_summary(summary_str, counter)
 
                 counter += 1
 
-                errD_fake = self.d_loss_fake.eval({ self.doublets: batch_zs, self.is_training: False})
-                errD_real = self.d_loss_real.eval({ self.triplets: batch_images, self.is_training: False})
-                errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: False})
+                errD_fake = self.d_loss_fake.eval({ self.doublets: batch_zs, self.is_training: True})
+                errD_real = self.d_loss_real.eval({ self.triplets: batch_images, self.is_training: True})
+                errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: True})
 
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss %.8f, g_loss %.8f0" \
                       % (epoch, idx, batch_idx, time.time() - start_time, errD_fake+errD_real, errG))
@@ -194,7 +194,7 @@ class Finn(object):
             summary_str = self.sess.run(self.img_sum,
                                            feed_dict = {
                                                self.doublets: train_doublets[0:self.batch_size],
-                                               self.is_training: False
+                                               self.is_training: True
                                            })
             self.writer.add_summary(summary_str, counter)
 
