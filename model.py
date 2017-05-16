@@ -54,7 +54,7 @@ class Finn(object):
             current_input = doublet
             current_inputdepth = doublet.shape[3]
             for i, outputdepth in enumerate(self.gen_layer_depths):
-                result = conv_block(current_input, self.gen_filter_sizes[i], outputdepth, name=('g_conv_block'+str(i)) )
+                result = conv_block(current_input, self.is_training, self.gen_filter_sizes[i], outputdepth, name=('g_conv_block'+str(i)) )
                 conv_outputs.append(result)
                 current_input = result
                 current_inputdepth = outputdepth
@@ -67,7 +67,7 @@ class Finn(object):
 
             # deconv portion
             for i, outputdepth in enumerate(rev_layer_depths[1:]): # reverse process exactly until last step
-                result = deconv_block(current_input, rev_filter_sizes[i], outputdepth, name=('g_deconv_block'+str(i)) )
+                result = deconv_block(current_input, self.is_training, rev_filter_sizes[i], outputdepth, name=('g_deconv_block'+str(i)) )
                 if i <= 4:
                     result = tf.nn.dropout(result, self.dropout_prob)
                 print( i, result.get_shape() )
