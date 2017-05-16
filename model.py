@@ -127,7 +127,7 @@ class Finn(object):
     def train(self, config):
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
                                          ).minimize(-self.d_loss_fake, var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(0.01*config.learning_rate, beta1=config.beta1
+        d_optim = tf.train.AdamOptimizer(0.1*config.learning_rate, beta1=config.beta1
                                                     ).minimize(self.d_loss, var_list=self.d_vars)
 
         tf.global_variables_initializer().run()
