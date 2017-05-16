@@ -202,7 +202,8 @@ class Finn(object):
                     _, summary_str = self.sess.run([g_optim, self.g_sum],
                                                    feed_dict={
                                                        self.doublets: batch_zs,
-                                                       self.is_training: True
+                                                       self.is_training: True,
+                                                       self.singlets: batch_targets
                                                    })
                     self.writer.add_summary(summary_str, counter)
                 else:
