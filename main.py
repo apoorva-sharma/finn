@@ -18,12 +18,14 @@ class Config:
         self.beta1 = beta1
         self.batch_size = batch_size
         self.checkpoint_dir = './chkpts'
+        self.train_gan = False
+        self.image_dir = os.path.join(os.getcwd(),'images')
 
 
 
 if __name__ == '__main__':
 
-    cfg = Config(epoch=10, learning_rate=.001, beta1=0.5, batch_size=64)
+    cfg = Config(epoch=30, learning_rate=.001, beta1=0.9, batch_size=4)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
