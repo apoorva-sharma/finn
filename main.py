@@ -25,7 +25,7 @@ class Config:
 
 if __name__ == '__main__':
 
-    cfg = Config(epoch=10, learning_rate=.001, beta1=0.5, batch_size=4)
+    cfg = Config(epoch=100, learning_rate=.001, beta1=0.5, batch_size=4)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True

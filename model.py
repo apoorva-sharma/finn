@@ -5,7 +5,8 @@ import math
 from glob import glob
 import tensorflow as tf
 import numpy as np
-from PIL import Image
+from scipy.misc import imsave
+import pdb
 
 from ops import *
 from datasets import *
@@ -236,26 +237,27 @@ class Finn(object):
             if np.mod(epoch, 5) == 0:
                 self.save(config.checkpoint_dir, counter)
 
-            # Save images to file
-            G_img = self.sess.run(self.G + self.mean_img,
-                                       feed_dict = {
-                                           self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
-                                           self.is_training: True,
-                                           self.mean_placeholder: self.mean_img
-                                       })
+                # Save images to file
+                G_img = self.sess.run(self.G + self.mean_img,
+                                           feed_dict = {
+                                               self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
+                                               self.is_training: True,
+                                               self.mean_placeholder: self.mean_img
+                                           })
 
-            G_imgs = [ Image.fromarray(G_img[i], 'RGB') for i in range(G_img.shape[0]) ]
-            [ img.save(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
-             (epoch, i))) for i, img in enumerate(G_imgs) ]
+                print('Saving images...')
+                [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
+                 (epoch, i)), G_img[i]) for i in range(G_img.shape[0]) ]
 
-            Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
-            Z1_imgs = [ Image.fromarray(Z_imgs[i,:,:,:3], 'RGB') for i in range(Z_imgs.shape[0]) ]
-            [ img.save(os.path.join(config.image_dir,"Z1_epoch%dimg%d.jpeg" %
-             (epoch, i))) for i, img in enumerate(Z1_imgs) ]
+                Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
+                [ imsave(os.path.join(config.image_dir,"Z1_epoch%dimg%d.jpeg" %
+                 (epoch, i)), Z_imgs[i,:,:,:3] + self.mean_img) for i in range(Z_imgs.shape[0]) ]
 
-            Z2_imgs = [ Image.fromarray(Z_imgs[i,:,:,3:], 'RGB') for i in range(Z_imgs.shape[0]) ]
-            [ img.save(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
-             (epoch, i))) for i, img in enumerate(Z2_imgs) ]
+                [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
+                 (epoch, i)), Z_imgs[i,:,:,3:] + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+
+                print('Images saved!')
+
 
 
 
