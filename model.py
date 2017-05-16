@@ -10,9 +10,10 @@ from ops import *
 from datasets import *
 
 class Finn(object):
-    def __init__(self, sess, df_dim, batch_size, writer_path, video_path):
+    def __init__(self, sess, df_dim, batch_size, dropout_prob, writer_path, video_path):
         self.df_dim = df_dim
         self.batch_size = batch_size
+        self.dropout_prob = dropout_prob
 
         self.sess = sess
         self.writer_path = writer_path
@@ -67,6 +68,8 @@ class Finn(object):
             # deconv portion
             for i, outputdepth in enumerate(rev_layer_depths[1:]): # reverse process exactly until last step
                 result = deconv_block(current_input, rev_filter_sizes[i], outputdepth, name=('g_deconv_block'+str(i)) )
+                if i <= 4:
+                    result = tf.nn.dropout(result, self.dropout_prob)
                 print( i, result.get_shape() )
                 stack = tf.concat([result, rev_conv_outputs[i+1]], 3)
                 print( i, stack.get_shape() )
