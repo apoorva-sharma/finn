@@ -253,12 +253,19 @@ class Finn(object):
                 [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
                  (epoch, i)), G_img[i]) for i in range(G_img.shape[0]) ]
 
-                Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
-                [ imsave(os.path.join(config.image_dir,"Z1_epoch%dimg%d.jpeg" %
-                 (epoch, i)), Z_imgs[i,:,:,:3] + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+                if(epoch == 0):
+                    # Save the targets
 
-                [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
-                 (epoch, i)), Z_imgs[i,:,:,3:] + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+                    Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
+                    [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpeg" %
+                     (epoch, i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+
+                    S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
+                    [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
+                     (epoch, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
+
+                    
+                    
 
                 print('Images saved!')
 
