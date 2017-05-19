@@ -148,7 +148,7 @@ class Finn(object):
 
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
                                          ).minimize(self.g_loss_total, var_list=self.g_vars) # -self.d_loss_fake
-        d_optim = tf.train.AdamOptimizer(0.05*config.learning_rate, beta1=config.beta1
+        d_optim = tf.train.RMSPropOptimizer(config.learning_rate
                                                     ).minimize(self.d_loss, var_list=self.d_vars)
 
         tf.global_variables_initializer().run()
@@ -264,8 +264,8 @@ class Finn(object):
                     [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
                      (epoch, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
 
-                    
-                    
+
+
 
                 print('Images saved!')
 
