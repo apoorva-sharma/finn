@@ -148,7 +148,7 @@ class Finn(object):
 
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
                                          ).minimize(self.g_loss_total, var_list=self.g_vars) # -self.d_loss_fake
-        d_optim = tf.train.RMSPropOptimizer(config.learning_rate
+        d_optim = tf.train.GradientDescentOptimizer(config.learning_rate
                                                     ).minimize(self.d_loss, var_list=self.d_vars)
 
         tf.global_variables_initializer().run()
@@ -180,7 +180,7 @@ class Finn(object):
             batch_idx = len(train_doublets) // self.batch_size
 
 
-            for idx in range(0,1): # batch_idx):
+            for idx in range(0, batch_idx):
                 batch_images_idx = train_triplets_idx[idx*self.batch_size:(idx+1)*self.batch_size]
                 batch_images = train_triplets[batch_images_idx]
 
@@ -229,13 +229,14 @@ class Finn(object):
                 print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss %.8f, g_loss %.8f, g_loss_l1 %.8f" \
                       % (epoch, idx, batch_idx, time.time() - start_time, errD_fake+errD_real, errG, errG_l1))
 
-            summary_str = self.sess.run(self.img_sum,
-                                           feed_dict = {
-                                               self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
-                                               self.is_training: True,
-                                               self.mean_placeholder: self.mean_img
-                                           })
-            self.writer.add_summary(summary_str, counter)
+                if idx % 5 == 0:
+                    summary_str = self.sess.run(self.img_sum,
+                                                   feed_dict = {
+                                                       self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
+                                                       self.is_training: True,
+                                                       self.mean_placeholder: self.mean_img
+                                                   })
+                    self.writer.add_summary(summary_str, counter)
 
 
             if np.mod(epoch, 5) == 0:

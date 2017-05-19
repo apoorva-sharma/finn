@@ -19,13 +19,13 @@ class Config:
         self.batch_size = batch_size
         self.checkpoint_dir = './chkpts'
         self.train_gan = False
-        self.image_dir = os.path.join(os.getcwd(),'images')
+        self.image_dir = os.path.join(os.getcwd(),'news_images')
 
 
 
 if __name__ == '__main__':
 
-    cfg = Config(epoch=100, learning_rate=.001, beta1=0.5, batch_size=4)
+    cfg = Config(epoch=100, learning_rate=.001, beta1=0.5, batch_size=1)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
@@ -36,7 +36,7 @@ if __name__ == '__main__':
         batch_size = cfg.batch_size
         dropout_prob = 1.0
         l1_weight = 1000.
-        writer_path = './10pm'
+        writer_path = './news'
         video_path = './datasets/news_cif.y4m'
         finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, writer_path, video_path)
         finn.build_model()
