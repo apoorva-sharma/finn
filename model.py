@@ -112,7 +112,7 @@ class Finn(object):
         self.d_real_sum = tf.summary.histogram("d_real", self.D_real)
         self.d_fake_sum = tf.summary.histogram("d_fake", self.D_fake)
         self.num_images = self.batch_size
-        self.G_image = tf.summary.image("G", tf.clip_by_value(self.G + self.mean_img, 0, 1), 
+        self.G_image = tf.summary.image("G", tf.clip_by_value(self.G + self.mean_img, 0, 1),
             max_outputs=self.max_outputs)
         self.before_image = tf.summary.image("Z1", self.before + self.mean_img, max_outputs=self.max_outputs)
         self.after_image = tf.summary.image("Z2", self.after + self.mean_img, max_outputs=self.max_outputs)
@@ -124,7 +124,7 @@ class Finn(object):
         self.g_loss = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits, labels=tf.ones_like(self.D_fake)))
 
-        self.g_loss_total = tf.add(-self.d_loss_fake, self.l1_weight*self.g_loss_l1)
+        self.g_loss_total = tf.add(self.g_loss, self.l1_weight*self.g_loss_l1)
 
         self.d_loss_sum_real = tf.summary.scalar("real_loss", self.d_loss_real)
         self.d_loss_sum_fake = tf.summary.scalar("fake_loss", self.d_loss_fake)
@@ -153,7 +153,7 @@ class Finn(object):
 
         tf.global_variables_initializer().run()
 
-        self.g_sum = tf.summary.merge([self.g_loss_sum, self.d_loss_sum_fake, self.d_fake_sum])
+        self.g_sum = tf.summary.merge([self.g_loss_sum, self.g_loss_sum_l1, self.d_loss_sum_fake, self.d_fake_sum])
         self.g_sum_l1 = tf.summary.merge([self.g_loss_sum_l1])
         self.d_sum = tf.summary.merge([self.d_loss_sum_real, self.d_real_sum, self.d_loss_sum])
         self.img_sum = tf.summary.merge([self.G_image, self.before_image, self.after_image])
