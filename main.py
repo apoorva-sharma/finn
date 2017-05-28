@@ -19,7 +19,7 @@ class Config:
         self.batch_size = batch_size
         self.checkpoint_dir = './chkpts'
         self.train_gan = False
-        self.image_dir = os.path.join(os.getcwd(),'news_images')
+        self.image_dir = os.path.join(os.getcwd(), 'news_images')
 
 
 

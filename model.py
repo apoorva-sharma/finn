@@ -46,11 +46,12 @@ class Finn(object):
             if reuse:
                 scope.reuse_variables()
 
-            h0 = lrelu(conv2d(triplet, self.df_dim, name="d_h0_conv"))
-            h1 = lrelu(bn(conv2d(h0, self.df_dim*2, name="d_h1_conv"), phase, name="d_h1_bn"))
-            h2 = lrelu(bn(conv2d(h1, self.df_dim*4, name="d_h2_conv"), phase, name="d_h2_bn"))
-            h3 = lrelu(bn(conv2d(h2, self.df_dim*8, name="d_h3_conv"), phase, name="d_h3_bn"))
-            h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
+            h0 = lrelu(conv2d(triplet, self.df_dim, hh=4, ww=4, stride_w=2, stride_h=2, padding='VALID', name="d_h0_conv"))
+            h1 = lrelu(bn(conv2d(h0, self.df_dim*2, hh=4, ww=4, stride_w=2, stride_h=2, padding='VALID', name="d_h1_conv"), phase, name="d_h1_bn"))
+            h2 = lrelu(bn(conv2d(h1, self.df_dim*4, hh=4, ww=4, stride_w=2, stride_h=2, padding='VALID', name="d_h2_conv"), phase, name="d_h2_bn"))
+            h3 = lrelu(bn(conv2d(h2, self.df_dim*8, hh=4, ww=4, stride_w=2, stride_h=2, padding='VALID', name="d_h3_conv"), phase, name="d_h3_bn"))
+            h4 = conv2d(h2, 1, hh=4, ww=4, padding='SAME')
+            #h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
 
             return tf.nn.sigmoid(h4), h4
 

@@ -6,7 +6,7 @@ import tensorflow as tf
 def lrelu(x, leak=0.2, name="lrelu"):
     return tf.maximum(x, leak*x)
 
-def conv2d(input_, output_dim, hh=3, ww=3, stride_h =1, stride_w=1, stddev=0.02, name="conv2d"):
+def conv2d(input_, output_dim, hh=3, ww=3, stride_h =1, stride_w=1, stddev=0.02, padding='SAME', name="conv2d"):
     with tf.variable_scope(name):
         w = tf.get_variable("w", [hh, ww, input_.get_shape()[-1], output_dim],
                             initializer=tf.truncated_normal_initializer(stddev=stddev))
