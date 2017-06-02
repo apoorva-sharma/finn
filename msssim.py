@@ -45,7 +45,7 @@ def tf_ssim(img1, img2, cs_map=False, mean_metric=True, size=11, sigma=1.5):
                     (sigma1_sq + sigma2_sq + C2))
 
     if mean_metric:
-        value = tf.reduce_mean(value)
+        value = tf.reduce_mean(value) + 1e-8
     return value
 
 

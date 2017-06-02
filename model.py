@@ -105,7 +105,9 @@ class Finn(object):
         self.G = self.generator(self.doublets)
         eps = 1e-5
         self.g_loss_l1 = tf.reduce_mean(tf.sqrt(tf.square(self.G - self.singlets) + eps))
-        self.g_loss_ms_ssim = tf.reduce_mean(-tf.log(tf_ms_ssim(self.G, self.singlets)))
+        g_mean_added_clipped = tf.clip_by_value(self.G + self.mean_img, 0, 1)
+        sing_mean_added_clipped = tf.clip_by_value(self.singlets + self.mean_img, 0, 1)
+        self.g_loss_ms_ssim = tf.reduce_mean(-tf.log(tf_ms_ssim(g_mean_added_clipped, sing_mean_added_clipped)))
 
         self.D_real, self.D_real_logits = self.discriminator(self.triplets, self.is_training, reuse=False)
 
