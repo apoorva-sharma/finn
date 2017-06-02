@@ -18,7 +18,7 @@ class Config:
         self.beta1 = beta1
         self.batch_size = batch_size
         self.checkpoint_dir = './chkpts'
-        self.train_gan = False
+        self.train_gan = True
         self.image_dir = os.path.join(os.getcwd(), 'news_images')
 
 
@@ -35,9 +35,10 @@ if __name__ == '__main__':
         df_dim = 8
         batch_size = cfg.batch_size
         dropout_prob = 1.0
-        l1_weight = 1000.
-        writer_path = './news'
+        l1_weight = 0.
+        ssim_weight = 1000.
+        writer_path = './ms_ssim'
         video_path = './datasets/news_cif.y4m'
-        finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, writer_path, video_path)
+        finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, writer_path, video_path)
         finn.build_model()
         finn.train(cfg)

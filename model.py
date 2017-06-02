@@ -11,12 +11,15 @@ import pdb
 from ops import *
 from datasets import *
 
+from msssim import tf_ms_ssim
+
 class Finn(object):
-    def __init__(self, sess, df_dim, batch_size, dropout_prob, l1_weight, writer_path, video_path):
+    def __init__(self, sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, writer_path, video_path):
         self.df_dim = df_dim
         self.batch_size = batch_size
         self.dropout_prob = dropout_prob
         self.l1_weight = l1_weight
+        self.ssim_weight = ssim_weight
 
         self.sess = sess
         self.writer_path = writer_path
@@ -102,6 +105,7 @@ class Finn(object):
         self.G = self.generator(self.doublets)
         eps = 1e-5
         self.g_loss_l1 = tf.reduce_mean(tf.sqrt(tf.square(self.G - self.singlets) + eps))
+        self.g_loss_ms_ssim = tf.reduce_mean(-tf.log(tf_ms_ssim(self.G, self.singlets)))
 
         self.D_real, self.D_real_logits = self.discriminator(self.triplets, self.is_training, reuse=False)
 
@@ -125,7 +129,8 @@ class Finn(object):
         self.g_loss = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits, labels=tf.ones_like(self.D_fake)))
 
-        self.g_loss_total = tf.add(self.g_loss, self.l1_weight*self.g_loss_l1)
+        self.g_loss_total = self.g_loss + self.l1_weight*self.g_loss_l1 + \
+         self.ssim_weight*self.g_loss_ms_ssim
 
         self.d_loss_sum_real = tf.summary.scalar("real_loss", self.d_loss_real)
         self.d_loss_sum_fake = tf.summary.scalar("fake_loss", self.d_loss_fake)
@@ -134,6 +139,7 @@ class Finn(object):
 
         self.g_loss_sum = tf.summary.scalar("G_loss", self.g_loss)
         self.g_loss_sum_l1 = tf.summary.scalar("G_loss_l1", self.g_loss_l1)
+        self.g_loss_ms_ssim_sum = tf.summary.scalar("G_loss_ms_ssim", self.g_loss_ms_ssim)
         self.d_loss_sum = tf.summary.scalar("D_loss", self.d_loss)
 
         t_vars = tf.trainable_variables()
@@ -154,7 +160,8 @@ class Finn(object):
 
         tf.global_variables_initializer().run()
 
-        self.g_sum = tf.summary.merge([self.g_loss_sum, self.g_loss_sum_l1, self.d_loss_sum_fake, self.d_fake_sum])
+        self.g_sum = tf.summary.merge([self.g_loss_sum, self.g_loss_sum_l1, self.g_loss_ms_ssim_sum,
+         self.d_loss_sum_fake, self.d_fake_sum])
         self.g_sum_l1 = tf.summary.merge([self.g_loss_sum_l1])
         self.d_sum = tf.summary.merge([self.d_loss_sum_real, self.d_real_sum, self.d_loss_sum])
         self.img_sum = tf.summary.merge([self.G_image, self.before_image, self.after_image])
@@ -225,10 +232,10 @@ class Finn(object):
                 errD_real = self.d_loss_real.eval({ self.triplets: batch_images, self.is_training: True})
                 errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: True})
                 errG_l1 = self.g_loss_l1.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
+                errG_ssim = self.g_loss_ms_ssim.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
 
-
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss %.8f, g_loss %.8f, g_loss_l1 %.8f" \
-                      % (epoch, idx, batch_idx, time.time() - start_time, errD_fake+errD_real, errG, errG_l1))
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss %.8f, g_loss %.8f, g_loss_l1 %.8f, g_loss_ms_ssim %.8f" \
+                      % (epoch, idx, batch_idx, time.time() - start_time, errD_fake+errD_real, errG, errG_l1, errG_ssim))
 
                 if idx % 5 == 0:
                     summary_str = self.sess.run(self.img_sum,
