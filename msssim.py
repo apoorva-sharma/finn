@@ -50,27 +50,28 @@ def tf_ssim(img1, img2, cs_map=False, mean_metric=True, size=11, sigma=1.5):
 
 
 def tf_ms_ssim(img1, img2, mean_metric=True, level=5):
-    img1 = tf.image.rgb_to_grayscale(img1)
-    img2 = tf.image.rgb_to_grayscale(img2)
+    with tf.variable_scope("ms_ssim_loss"):
+        img1 = tf.image.rgb_to_grayscale(img1)
+        img2 = tf.image.rgb_to_grayscale(img2)
 
-    weight = tf.constant([0.0448, 0.2856, 0.3001, 0.2363, 0.1333], dtype=tf.float32)
-    mssim = []
-    mcs = []
-    for l in range(level):
-        ssim_map, cs_map = tf_ssim(img1, img2, cs_map=True, mean_metric=False)
-        mssim.append(tf.reduce_mean(ssim_map))
-        mcs.append(tf.reduce_mean(cs_map))
-        filtered_im1 = tf.nn.avg_pool(img1, [1,2,2,1], [1,2,2,1], padding='SAME')
-        filtered_im2 = tf.nn.avg_pool(img2, [1,2,2,1], [1,2,2,1], padding='SAME')
-        img1 = filtered_im1
-        img2 = filtered_im2
+        weight = tf.constant([0.0448, 0.2856, 0.3001, 0.2363, 0.1333], dtype=tf.float32)
+        mssim = []
+        mcs = []
+        for l in range(level):
+            ssim_map, cs_map = tf_ssim(img1, img2, cs_map=True, mean_metric=False)
+            mssim.append(tf.reduce_mean(ssim_map))
+            mcs.append(tf.reduce_mean(cs_map))
+            filtered_im1 = tf.nn.avg_pool(img1, [1,2,2,1], [1,2,2,1], padding='SAME')
+            filtered_im2 = tf.nn.avg_pool(img2, [1,2,2,1], [1,2,2,1], padding='SAME')
+            img1 = filtered_im1
+            img2 = filtered_im2
 
-    # list to tensor of dim D+1
-    mssim = tf.stack(mssim, axis=0)
-    mcs = tf.stack(mcs, axis=0)
+        # list to tensor of dim D+1
+        mssim = tf.stack(mssim, axis=0)
+        mcs = tf.stack(mcs, axis=0)
 
-    value = (tf.reduce_prod(mcs[0:level-1]**weight[0:level-1])*
-                            (mssim[level-1]**weight[level-1]))
+        value = (tf.reduce_prod(mcs[0:level-1]**weight[0:level-1])*
+                                (mssim[level-1]**weight[level-1]))
 
     if mean_metric:
         value = tf.reduce_mean(value)
