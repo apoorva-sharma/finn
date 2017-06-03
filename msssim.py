@@ -75,3 +75,35 @@ def tf_ms_ssim(img1, img2, mean_metric=True, level=5):
     if mean_metric:
         value = tf.reduce_mean(value)
     return value
+
+def main():
+
+
+    img1 = tf.placeholder(tf.float32, [None, 288, 352, 3], name = 'img1')
+
+    video_path = './datasets/news_cif.y4m'
+
+    data = generateDataSet(video_path)
+
+    mean_img = data["mean_img"]
+    val_targets = data["val_targets"]
+
+    run_config = tf.ConfigProto()
+    run_config.gpu_options.allow_growth = True
+
+    with tf.Session(config=run_config) as sess:
+        out = sess.run(tf_ms_ssim(img1, tf.zeros_like(img1)), 
+            feed_dict={img1:val_targets+mean_img})
+
+        print(out)
+
+
+
+
+
+
+
+if __name__ == '__main__':
+    from datasets import *
+
+    main()
