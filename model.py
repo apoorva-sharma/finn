@@ -14,12 +14,14 @@ from datasets import *
 from msssim import tf_ms_ssim
 
 class Finn(object):
-    def __init__(self, sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, writer_path, video_path):
+    def __init__(self, sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, clipping_weight, discriminator_weight, writer_path, video_path):
         self.df_dim = df_dim
         self.batch_size = batch_size
         self.dropout_prob = dropout_prob
         self.l1_weight = l1_weight
         self.ssim_weight = ssim_weight
+        self.clipping_weight = clipping_weight
+        self.discriminator_weight = discriminator_weight
 
         self.sess = sess
         self.writer_path = writer_path
@@ -96,34 +98,29 @@ class Finn(object):
         image_dims = [self.input_height, self.input_width, 6]
         triplet_dims = [self.input_height, self.input_width, 9]
 
-        self.mean_placeholder = tf.placeholder(tf.float32, singlet_dims, name = 'mean_img')
+        # Set up placeholders
         self.singlets = tf.placeholder(tf.float32, [self.batch_size] + singlet_dims, name = 'singlets')
         self.doublets = tf.placeholder(tf.float32, [self.batch_size] + image_dims, name = 'doublets')
         self.triplets = tf.placeholder(tf.float32, [self.batch_size] + triplet_dims, name = 'triplets')
         self.is_training = tf.placeholder(tf.bool, (), name = 'is_training')
 
-        self.G = self.generator(self.doublets)
-        eps = 1e-5
-        self.g_loss_l1 = tf.reduce_mean(tf.sqrt(tf.square(self.G - self.singlets) + eps))
-        g_mean_added_clipped = tf.clip_by_value(self.G + self.mean_img, 0, 1)
         sing_mean_added_clipped = tf.clip_by_value(self.singlets + self.mean_img, 0, 1)
-        self.g_loss_ms_ssim = tf.reduce_mean(-tf.log(tf_ms_ssim(g_mean_added_clipped, sing_mean_added_clipped)))
 
-        self.D_real, self.D_real_logits = self.discriminator(self.triplets, self.is_training, reuse=False)
+        # Sample generated frame from generator
+        self.G = self.generator(self.doublets)
+        g_mean_added = self.G + self.mean_img
+        g_mean_added_clipped = tf.clip_by_value(g_mean_added, 0, 1)
 
+        # Assemble fake triplets using generated frame
         self.before, self.after = tf.split(self.doublets, [3, 3], 3)
         self.fake_triplets = tf.concat([self.before, self.G, self.after], 3)
 
+        # Evaluate discrimator on real triplets
+        self.D_real, self.D_real_logits = self.discriminator(self.triplets, self.is_training, reuse=False)
+        # Use same discriminator on fake triplets
         self.D_fake, self.D_fake_logits = self.discriminator(self.fake_triplets, self.is_training, reuse=True)
 
-        self.d_real_sum = tf.summary.histogram("d_real", self.D_real)
-        self.d_fake_sum = tf.summary.histogram("d_fake", self.D_fake)
-        self.num_images = self.batch_size
-        self.G_image = tf.summary.image("G", tf.clip_by_value(self.G + self.mean_img, 0, 1),
-            max_outputs=self.max_outputs)
-        self.before_image = tf.summary.image("Z1", self.before + self.mean_img, max_outputs=self.max_outputs)
-        self.after_image = tf.summary.image("Z2", self.after + self.mean_img, max_outputs=self.max_outputs)
-
+        # Calculate GAN losses
         self.d_loss_real = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_real_logits, labels=tf.ones_like(self.D_real)))
         self.d_loss_fake = tf.reduce_mean(
@@ -131,41 +128,65 @@ class Finn(object):
         self.g_loss = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits, labels=tf.ones_like(self.D_fake)))
 
-        self.g_loss_total = self.g_loss + self.l1_weight*self.g_loss_l1 + \
-         self.ssim_weight*self.g_loss_ms_ssim
+        # Calculate auxiliary losses
+        self.ms_ssim_loss = tf.reduce_mean(-tf.log(tf_ms_ssim(g_mean_added_clipped, sing_mean_added_clipped)))
 
-        self.d_loss_sum_real = tf.summary.scalar("real_loss", self.d_loss_real)
-        self.d_loss_sum_fake = tf.summary.scalar("fake_loss", self.d_loss_fake)
+        eps = 1e-5
+        self.l1_loss = tf.reduce_mean(tf.sqrt(tf.square(self.G - self.singlets) + eps))
 
-        self.d_loss = self.d_loss_fake + self.d_loss_real
+        self.clipping_loss = tf.reduce_mean(tf.square(g_mean_added - g_mean_added_clipped))
 
+        # Combine losses into single functions for the discriminator and the generator
+        self.d_loss_total = self.d_loss_fake + self.d_loss_real
+        self.g_loss_total = self.discriminator_weight*self.g_loss + \
+                                self.l1_weight*self.l1_loss + \
+                                self.ssim_weight*self.ms_ssim_loss + \
+                                self.clipping_weight*self.clipping_loss
+
+
+        # Record relevant variables to TensorBoard
+        #  - discriminator logistic output
+        self.d_real_sum = tf.summary.histogram("d_real", self.D_real)
+        self.d_fake_sum = tf.summary.histogram("d_fake", self.D_fake)
+        #  - discriminator losses on real and fake images
+        self.d_loss_real_sum = tf.summary.scalar("real_loss", self.d_loss_real)
+        self.d_loss_fake_sum = tf.summary.scalar("fake_loss", self.d_loss_fake)
+        self.d_loss_total_sum = tf.summary.scalar("D_loss_total", self.d_loss_total)
+        #  - generator losses
         self.g_loss_sum = tf.summary.scalar("G_loss", self.g_loss)
-        self.g_loss_sum_l1 = tf.summary.scalar("G_loss_l1", self.g_loss_l1)
-        self.g_loss_ms_ssim_sum = tf.summary.scalar("G_loss_ms_ssim", self.g_loss_ms_ssim)
-        self.d_loss_sum = tf.summary.scalar("D_loss", self.d_loss)
+        self.l1_loss_sum = tf.summary.scalar("l1_loss", self.l1_loss)
+        self.ms_ssim_loss_sum = tf.summary.scalar("ms_ssim_loss", self.ms_ssim_loss)
+        self.clipping_loss_sum = tf.summary.scalar("clipping_loss", self.clipping_loss)
+        self.g_loss_total_sum = tf.summary.scalar("G_total_loss", self.g_loss_total)
+        # - sample images
+        self.num_images = self.batch_size
+        self.G_image = tf.summary.image("G", tf.clip_by_value(self.G + self.mean_img, 0, 1),
+            max_outputs=self.max_outputs)
+        self.before_image = tf.summary.image("Z1", self.before + self.mean_img, max_outputs=self.max_outputs)
+        self.after_image = tf.summary.image("Z2", self.after + self.mean_img, max_outputs=self.max_outputs)
 
+        # Collect trainable variables for the generator and discriminator
         t_vars = tf.trainable_variables()
-
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
-        # print(self.g_vars)
+
         self.saver = tf.train.Saver()
 
     def train(self, config):
         g_optim_l1 = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
-                                         ).minimize(self.g_loss_l1, var_list=self.g_vars)
+                                         ).minimize(self.l1_loss, var_list=self.g_vars)
 
         g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
-                                         ).minimize(self.g_loss_total, var_list=self.g_vars) # -self.d_loss_fake
-        d_optim = tf.train.GradientDescentOptimizer(config.learning_rate
-                                                    ).minimize(self.d_loss, var_list=self.d_vars)
+                                         ).minimize(self.g_loss_total, var_list=self.g_vars)
+        d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
+                                                    ).minimize(self.d_loss_total, var_list=self.d_vars)
 
         tf.global_variables_initializer().run()
 
-        self.g_sum = tf.summary.merge([self.g_loss_sum, self.g_loss_sum_l1, self.g_loss_ms_ssim_sum,
-         self.d_loss_sum_fake, self.d_fake_sum])
-        self.g_sum_l1 = tf.summary.merge([self.g_loss_sum_l1])
-        self.d_sum = tf.summary.merge([self.d_loss_sum_real, self.d_real_sum, self.d_loss_sum])
+        self.g_sum = tf.summary.merge([self.g_loss_sum, self.l1_loss_sum, self.ms_ssim_loss_sum, self.clipping_loss_sum,
+                                        self.g_loss_total_sum, self.d_loss_fake_sum, self.d_fake_sum])
+        self.g_sum_l1 = tf.summary.merge([self.l1_loss_sum])
+        self.d_sum = tf.summary.merge([self.d_loss_real_sum, self.d_real_sum, self.d_loss_total_sum])
         self.img_sum = tf.summary.merge([self.G_image, self.before_image, self.after_image])
         self.writer = tf.summary.FileWriter(self.writer_path + "/" + self.filename, self.sess.graph)
 
@@ -233,10 +254,10 @@ class Finn(object):
                 errD_fake = self.d_loss_fake.eval({ self.doublets: batch_zs, self.is_training: True})
                 errD_real = self.d_loss_real.eval({ self.triplets: batch_images, self.is_training: True})
                 errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: True})
-                errG_l1 = self.g_loss_l1.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
-                errG_ssim = self.g_loss_ms_ssim.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
+                errG_l1 = self.l1_loss.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
+                errG_ssim = self.ms_ssim_loss.eval({self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
 
-                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss %.8f, g_loss %.8f, g_loss_l1 %.8f, g_loss_ms_ssim %.8f" \
+                print("Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss_total %.8f, g_loss %.8f, l1_loss %.8f, ms_ssim_loss %.8f" \
                       % (epoch, idx, batch_idx, time.time() - start_time, errD_fake+errD_real, errG, errG_l1, errG_ssim))
 
                 if idx % 5 == 0:
@@ -244,7 +265,6 @@ class Finn(object):
                                                    feed_dict = {
                                                        self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
                                                        self.is_training: True,
-                                                       self.mean_placeholder: self.mean_img
                                                    })
                     self.writer.add_summary(summary_str, counter)
 
@@ -257,7 +277,6 @@ class Finn(object):
                                            feed_dict = {
                                                self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
                                                self.is_training: True,
-                                               self.mean_placeholder: self.mean_img
                                            })
 
                 print('Saving images...')
