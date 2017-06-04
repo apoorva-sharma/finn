@@ -12,7 +12,7 @@ from model import *
 
 class Config:
 
-    def __init__(self, epoch, learning_rate, beta1, batch_size):
+    def __init__(self, epoch, g_learning_rate, d_learning_rate, beta1, batch_size):
         self.epoch = epoch
         self.g_learning_rate = g_learning_rate
         self.d_learning_rate = d_learning_rate
@@ -26,7 +26,7 @@ class Config:
 
 if __name__ == '__main__':
 
-    cfg = Config(epoch=100, g_learning_rate=.001, d_learning_rate=0.0001, beta1=0.5, batch_size=1)
+    cfg = Config(epoch=100, g_learning_rate=.005, d_learning_rate=0.00005, beta1=0.5, batch_size=1)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         l1_weight = 0.
         ssim_weight = 1.
         clipping_weight = 1.
-        discriminator_weight = 1.
+        discriminator_weight = 1e-5
         writer_path = './ms_ssim'
         video_path = './datasets/news_cif.y4m'
         finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, clipping_weight, discriminator_weight, writer_path, video_path)
