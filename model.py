@@ -177,6 +177,7 @@ class Finn(object):
 
     def train(self, config):
 
+
         global_step = tf.placeholder(tf.float32, shape=[])
         g_learning_rate = tf.train.exponential_decay(config.g_learning_rate, global_step,
                                                    1, 0.96, staircase=True)
@@ -219,6 +220,40 @@ class Finn(object):
         for epoch in range(config.epoch):
             batch_idx = len(train_doublets) // self.batch_size
 
+            if np.mod(epoch, 5) == 0:
+                self.save(config.checkpoint_dir, counter)
+
+                # Save images to file
+                # clipped_G_img = clip_keeping_color(self.G + self.mean_img)
+                clipped_G_img = tf.clip_by_value(self.G + self.mean_img, 0,1)
+
+                G_img = [self.sess.run(clipped_G_img,
+                                           feed_dict = {
+                                               self.doublets: train_doublets[k*self.batch_size:(k+1)*self.batch_size] ,
+                                               self.is_training: True,
+                                           }) for k in range(train_doublets.shape[0] // self.batch_size)]
+
+                G_img = np.stack(G_img, axis=0)
+
+                print('Saving images...')
+                [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
+                 (epoch, i)), G_img[i]) for i in range(G_img.shape[0]) ]
+
+                if(epoch == 0):
+                    # Save the targets
+
+                    # Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
+                    Z_imgs = train_doublets
+                    [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpeg" %
+                     (epoch, i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+
+                    # S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
+                    S_imgs = train_singlets
+                    [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
+                     (epoch, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
+
+
+                print('Images saved!')
 
             for idx in range(0, batch_idx):
                 batch_images_idx = train_triplets_idx[idx*self.batch_size:(idx+1)*self.batch_size]
@@ -288,11 +323,13 @@ class Finn(object):
                 # clipped_G_img = clip_keeping_color(self.G + self.mean_img)
                 clipped_G_img = tf.clip_by_value(self.G + self.mean_img, 0,1)
 
-                G_img = self.sess.run(clipped_G_img,
+                G_img = [self.sess.run(clipped_G_img,
                                            feed_dict = {
-                                               self.doublets: train_doublets,
+                                               self.doublets: train_doublets[k*self.batch_size:(k+1)*self.batch_size] ,
                                                self.is_training: True,
-                                           })
+                                           }) for k in range(train_doublets.shape[0] // self.batch_size)]
+
+                G_img = np.stack(G_img, axis=0)
 
                 print('Saving images...')
                 [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
@@ -310,8 +347,6 @@ class Finn(object):
                     S_imgs = train_singlets
                     [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
                      (epoch, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
-
-
 
 
                 print('Images saved!')
