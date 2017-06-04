@@ -55,7 +55,7 @@ class Finn(object):
             h1 = lrelu(bn(conv2d(h0, self.df_dim*2, hh=4, ww=4, stride_w=2, stride_h=2, padding='VALID', name="d_h1_conv"), phase, name="d_h1_bn"))
             h2 = lrelu(bn(conv2d(h1, self.df_dim*4, hh=4, ww=4, stride_w=2, stride_h=2, padding='VALID', name="d_h2_conv"), phase, name="d_h2_bn"))
             h3 = lrelu(bn(conv2d(h2, self.df_dim*8, hh=4, ww=4, stride_w=2, stride_h=2, padding='VALID', name="d_h3_conv"), phase, name="d_h3_bn"))
-            h4 = conv2d(h2, 1, hh=4, ww=4, padding='SAME')
+            h4 = conv2d(h3, 1, hh=4, ww=4, padding='SAME')
             #h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
 
             return tf.nn.sigmoid(h4), h4
@@ -160,7 +160,7 @@ class Finn(object):
         self.g_loss_total_sum = tf.summary.scalar("G_total_loss", self.g_loss_total)
         # - sample images
         self.num_images = self.batch_size
-        self.G_image = tf.summary.image("G", tf.clip_by_value(self.G + self.mean_img, 0, 1),
+        self.G_image = tf.summary.image("G", clip_keeping_color(self.G + self.mean_img),
             max_outputs=self.max_outputs)
         self.before_image = tf.summary.image("Z1", self.before + self.mean_img, max_outputs=self.max_outputs)
         self.after_image = tf.summary.image("Z2", self.after + self.mean_img, max_outputs=self.max_outputs)
@@ -173,12 +173,16 @@ class Finn(object):
         self.saver = tf.train.Saver()
 
     def train(self, config):
-        g_optim_l1 = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
+
+        global_step = tf.placeholder(tf.float32, shape=[])
+        learning_rate = tf.train.exponential_decay(config.learning_rate, global_step,
+                                                   1, 0.96, staircase=True)
+        g_optim_l1 = tf.train.AdamOptimizer(learning_rate, beta1=config.beta1
                                          ).minimize(self.l1_loss, var_list=self.g_vars)
 
-        g_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
+        g_optim = tf.train.AdamOptimizer(learning_rate, beta1=config.beta1
                                          ).minimize(self.g_loss_total, var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(config.learning_rate, beta1=config.beta1
+        d_optim = tf.train.AdamOptimizer(learning_rate, beta1=config.beta1
                                                     ).minimize(self.d_loss_total, var_list=self.d_vars)
 
         tf.global_variables_initializer().run()
@@ -210,6 +214,36 @@ class Finn(object):
         for epoch in range(config.epoch):
             batch_idx = len(train_doublets) // self.batch_size
 
+            if np.mod(epoch, 5) == 0:
+                self.save(config.checkpoint_dir, counter)
+
+                # Save images to file
+                G_img = self.sess.run(clip_keeping_color(self.G + self.mean_img),
+                                           feed_dict = {
+                                               self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
+                                               self.is_training: True,
+                                           })
+
+                print('Saving images...')
+                [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
+                 (epoch-1, i)), G_img[i]) for i in range(G_img.shape[0]) ]
+
+                if(epoch == 0):
+                    # Save the targets
+
+                    Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
+                    [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpeg" %
+                     (epoch-1, i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+
+                    S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
+                    [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
+                     (epoch-1, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
+
+
+
+
+                print('Images saved!')
+
 
             for idx in range(0, batch_idx):
                 batch_images_idx = train_triplets_idx[idx*self.batch_size:(idx+1)*self.batch_size]
@@ -227,7 +261,8 @@ class Finn(object):
                                                    feed_dict={
                                                        self.triplets: batch_images,
                                                        self.doublets: batch_zs,
-                                                       self.is_training: True
+                                                       self.is_training: True,
+                                                       global_step: epoch
                                                    })
                     self.writer.add_summary(summary_str, counter)
 
@@ -236,7 +271,8 @@ class Finn(object):
                                                    feed_dict={
                                                        self.doublets: batch_zs,
                                                        self.is_training: True,
-                                                       self.singlets: batch_targets
+                                                       self.singlets: batch_targets,
+                                                       global_step: epoch
                                                    })
                     self.writer.add_summary(summary_str, counter)
                 else:
@@ -245,7 +281,8 @@ class Finn(object):
                                                    feed_dict={
                                                        self.doublets: batch_zs,
                                                        self.is_training: True,
-                                                       self.singlets: batch_targets
+                                                       self.singlets: batch_targets,
+                                                       global_step: epoch
                                                    })
                     self.writer.add_summary(summary_str, counter)
 
@@ -273,7 +310,7 @@ class Finn(object):
                 self.save(config.checkpoint_dir, counter)
 
                 # Save images to file
-                G_img = self.sess.run(tf.clip_by_value(self.G + self.mean_img,0,1),
+                G_img = self.sess.run(clip_keeping_color(self.G + self.mean_img),
                                            feed_dict = {
                                                self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
                                                self.is_training: True,

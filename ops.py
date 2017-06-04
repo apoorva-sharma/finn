@@ -74,3 +74,16 @@ def linear(input_, output_size, scope=None, stddev=0.02, bias_start=0.0, with_w=
       return tf.matmul(input_, matrix) + bias, matrix, bias
     else:
       return tf.matmul(input_, matrix) + bias
+
+
+def clip_keeping_color(img):
+    with tf.variable_scope("clip_keeping_color"):
+        max_channel = tf.reduce_max(img,axis=3, keep_dims=True)
+        maxes = tf.maximum(tf.ones_like(max_channel), max_channel)
+
+        img_out = img / maxes
+
+        return img_out
+
+
+
