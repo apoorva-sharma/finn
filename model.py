@@ -249,6 +249,13 @@ class Finn(object):
                                                        self.singlets: batch_targets,
                                                        global_step: epoch
                                                    })
+                   _, summary_str = self.sess.run([g_optim, self.g_sum],
+                                                  feed_dict={
+                                                      self.doublets: batch_zs,
+                                                      self.is_training: True,
+                                                      self.singlets: batch_targets,
+                                                      global_step: epoch
+                                                  })
                     self.writer.add_summary(summary_str, counter)
                 else:
                     # Update G Network
