@@ -81,7 +81,7 @@ class Finn(object):
             # deconv portion
             for i, outputdepth in enumerate(rev_layer_depths[1:]): # reverse process exactly until last step
 
-                result = deconv_block(current_input, self.is_training, rev_filter_sizes[i], outputdepth, name=('g_deconv_block'+str(i)) )
+                result = bilinear_resize_deconv_block(current_input, self.is_training, rev_filter_sizes[i], outputdepth, name=('g_deconv_block'+str(i)) )
                 if i <= 4:
                     result = tf.nn.dropout(result, self.dropout_prob)
                 print( i, result.get_shape() )
@@ -90,7 +90,7 @@ class Finn(object):
                 current_input = stack
 
             outputdepth = 3 # final image is 3 channel
-            h = tanh_deconv_block(current_input, self.is_training, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
+            h = bilinear_resize_tanh_deconv_block(current_input, self.is_training, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
             return conv2d(h, outputdepth, hh=1, ww=1, mean=0.11, stddev=0.04, name='final_conv')
 
     def build_model(self):
@@ -160,7 +160,10 @@ class Finn(object):
         self.g_loss_total_sum = tf.summary.scalar("G_total_loss", self.g_loss_total)
         # - sample images
         self.num_images = self.batch_size
-        self.G_image = tf.summary.image("G", clip_keeping_color(self.G + self.mean_img),
+
+        # clipped_G_img = tf.nn.clip_by_value(self.G + self.mean_img, 0,1)
+        clipped_G_img = tf.clip_by_value(self.G + self.mean_img, 0,1)
+        self.G_image = tf.summary.image("G", clipped_G_img,
             max_outputs=self.max_outputs)
         self.before_image = tf.summary.image("Z1", self.before + self.mean_img, max_outputs=self.max_outputs)
         self.after_image = tf.summary.image("Z2", self.after + self.mean_img, max_outputs=self.max_outputs)
@@ -213,36 +216,6 @@ class Finn(object):
 
         for epoch in range(config.epoch):
             batch_idx = len(train_doublets) // self.batch_size
-
-            if np.mod(epoch, 5) == 0:
-                self.save(config.checkpoint_dir, counter)
-
-                # Save images to file
-                G_img = self.sess.run(clip_keeping_color(self.G + self.mean_img),
-                                           feed_dict = {
-                                               self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
-                                               self.is_training: True,
-                                           })
-
-                print('Saving images...')
-                [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
-                 (epoch-1, i)), G_img[i]) for i in range(G_img.shape[0]) ]
-
-                if(epoch == 0):
-                    # Save the targets
-
-                    Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
-                    [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpeg" %
-                     (epoch-1, i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
-
-                    S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
-                    [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
-                     (epoch-1, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
-
-
-
-
-                print('Images saved!')
 
 
             for idx in range(0, batch_idx):
@@ -310,7 +283,10 @@ class Finn(object):
                 self.save(config.checkpoint_dir, counter)
 
                 # Save images to file
-                G_img = self.sess.run(clip_keeping_color(self.G + self.mean_img),
+                # clipped_G_img = clip_keeping_color(self.G + self.mean_img)
+                clipped_G_img = tf.clip_by_value(self.G + self.mean_img, 0,1)
+
+                G_img = self.sess.run(clipped_G_img,
                                            feed_dict = {
                                                self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
                                                self.is_training: True,

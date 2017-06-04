@@ -57,6 +57,31 @@ def tanh_deconv_block(input_, phase, filter_size, output_depth, name="deconv_blo
 
         return h2
 
+def bilinear_resize_deconv_block(input_, phase, filter_size, output_depth, name="deconv_block"):
+    with tf.variable_scope(name):
+        output_shape = [ int(input_.shape[0]), 2*int(input_.shape[1]), 2*int(input_.shape[2]), input_.shape[3]]
+        resized = tf.image.resize_images(input_, output_shape[1:3])
+        deconv = conv2d(resized, output_dim=output_depth, 
+            hh=4, ww=4, stride_h =1, stride_w=1, padding='SAME')
+        print('\tdeconv:',deconv.get_shape())
+        h1 = lrelu( bn( deconv, phase, name="bn1") )
+        h2 = lrelu( bn( conv2d(h1, output_depth, filter_size, filter_size, name="conv2d1"), phase, name="bn2") )
+        print('\th2:',h2.get_shape())
+
+        return h2
+
+
+def bilinear_resize_tanh_deconv_block(input_, phase, filter_size, output_depth, name="deconv_block"):
+    with tf.variable_scope(name):
+        output_shape = [ int(input_.shape[0]), 2*int(input_.shape[1]), 2*int(input_.shape[2]), input_.shape[3]]
+        resized = tf.image.resize_images(input_, output_shape[1:3])
+        deconv = conv2d(resized, output_dim=output_depth, 
+            hh=4, ww=4, stride_h =1, stride_w=1, padding='SAME')
+        h1 = lrelu( bn( deconv, phase, name="bn1") )
+        h2 = tf.nn.tanh( bn( conv2d(h1, output_depth, filter_size, filter_size, name="conv2d1"), phase, name="bn2") )
+
+        return h2
+
 
 
 def bn(x, phase, center=True, scale=True, name = 'batch_norm'):
