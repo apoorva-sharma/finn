@@ -14,7 +14,8 @@ class Config:
 
     def __init__(self, epoch, learning_rate, beta1, batch_size):
         self.epoch = epoch
-        self.learning_rate = learning_rate
+        self.g_learning_rate = g_learning_rate
+        self.d_learning_rate = d_learning_rate
         self.beta1 = beta1
         self.batch_size = batch_size
         self.checkpoint_dir = './chkpts'
@@ -25,7 +26,7 @@ class Config:
 
 if __name__ == '__main__':
 
-    cfg = Config(epoch=100, learning_rate=.001, beta1=0.5, batch_size=1)
+    cfg = Config(epoch=100, g_learning_rate=.001, d_learning_rate=0.0001, beta1=0.5, batch_size=1)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
