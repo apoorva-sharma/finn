@@ -4,12 +4,13 @@ import tensorflow as tf
 
 
 def lrelu(x, leak=0.2, name="lrelu"):
-    return tf.maximum(x, leak*x)
+    with tf.variable_scope(name):
+        return tf.maximum(x, leak*x)
 
-def conv2d(input_, output_dim, hh=3, ww=3, stride_h =1, stride_w=1, stddev=0.02, padding='SAME', name="conv2d"):
+def conv2d(input_, output_dim, hh=3, ww=3, stride_h =1, stride_w=1, stddev=0.02, mean=0.0, padding='SAME', name="conv2d"):
     with tf.variable_scope(name):
         w = tf.get_variable("w", [hh, ww, input_.get_shape()[-1], output_dim],
-                            initializer=tf.truncated_normal_initializer(stddev=stddev))
+                            initializer=tf.truncated_normal_initializer(mean=mean,stddev=stddev))
         conv = tf.nn.conv2d(input_, w, strides=[1, stride_h, stride_w, 1], padding='SAME')
 
         biases = tf.get_variable('biases', [output_dim], initializer=tf.constant_initializer(0.0))

@@ -41,7 +41,7 @@ class Finn(object):
         self.input_width = self.train_doublets.shape[2]
         self.dataset_name = 'abc'
 
-        self.gen_layer_depths = [16, 32, 64, 128]
+        self.gen_layer_depths = [32, 64, 64, 128]
         self.gen_filter_sizes = [3, 3, 3, 3]
 
         self.max_outputs = 100
@@ -90,8 +90,8 @@ class Finn(object):
                 current_input = stack
 
             outputdepth = 3 # final image is 3 channel
-            return tanh_deconv_block(current_input, self.is_training, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
-
+            h = tanh_deconv_block(current_input, self.is_training, rev_filter_sizes[-1], outputdepth, name=('g_tanh_deconv') )
+            return conv2d(h, outputdepth, hh=1, ww=1, mean=0.11, stddev=0.04, name='final_conv')
 
     def build_model(self):
         singlet_dims = [self.input_height, self.input_width, 3]
