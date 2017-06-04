@@ -178,14 +178,16 @@ class Finn(object):
     def train(self, config):
 
         global_step = tf.placeholder(tf.float32, shape=[])
-        learning_rate = tf.train.exponential_decay(config.learning_rate, global_step,
+        g_learning_rate = tf.train.exponential_decay(config.g_learning_rate, global_step,
                                                    1, 0.96, staircase=True)
-        g_optim_l1 = tf.train.AdamOptimizer(learning_rate, beta1=config.beta1
+        d_learning_rate = tf.train.exponential_decay(config.d_learning_rate, global_step,
+                                                   1, 0.96, staircase=True)
+        g_optim_l1 = tf.train.AdamOptimizer(g_learning_rate, beta1=config.beta1
                                          ).minimize(self.l1_loss, var_list=self.g_vars)
 
-        g_optim = tf.train.AdamOptimizer(learning_rate, beta1=config.beta1
+        g_optim = tf.train.AdamOptimizer(g_learning_rate, beta1=config.beta1
                                          ).minimize(self.g_loss_total, var_list=self.g_vars)
-        d_optim = tf.train.AdamOptimizer(learning_rate, beta1=config.beta1
+        d_optim = tf.train.AdamOptimizer(d_learning_rate, beta1=config.beta1
                                                     ).minimize(self.d_loss_total, var_list=self.d_vars)
 
         tf.global_variables_initializer().run()
