@@ -288,7 +288,7 @@ class Finn(object):
 
                 G_img = self.sess.run(clipped_G_img,
                                            feed_dict = {
-                                               self.doublets: train_doublets[train_doublets_idx[0:config.batch_size]],
+                                               self.doublets: train_doublets,
                                                self.is_training: True,
                                            })
 
@@ -299,11 +299,13 @@ class Finn(object):
                 if(epoch == 0):
                     # Save the targets
 
-                    Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
+                    # Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
+                    Z_imgs = train_doublets
                     [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpeg" %
                      (epoch, i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
 
-                    S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
+                    # S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
+                    S_imgs = train_singlets
                     [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
                      (epoch, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
 
