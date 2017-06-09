@@ -44,5 +44,5 @@ if __name__ == '__main__':
         video_path = './datasets/news_cif.y4m'
         finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, clipping_weight, discriminator_weight, writer_path, video_path)
         finn.build_model()
-        finn.test(cfg)
+        finn.train(cfg)
         #finn.train(cfg)
