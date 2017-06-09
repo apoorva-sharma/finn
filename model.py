@@ -185,7 +185,8 @@ class Finn(object):
                                                    1, 0.96, staircase=True)
         g_optim_l1 = tf.train.AdamOptimizer(g_learning_rate, beta1=config.beta1
                                          ).minimize(self.l1_loss, var_list=self.g_vars)
-
+        g_optim_ms = tf.train.AdamOptimizer(g_learning_rate, beta1=config.beta1
+                                            ).minimize(self.ms_ssim_loss, var_list=self.g_vars)
         g_optim = tf.train.AdamOptimizer(g_learning_rate, beta1=config.beta1
                                          ).minimize(self.g_loss_total, var_list=self.g_vars)
         d_optim = tf.train.AdamOptimizer(d_learning_rate, beta1=config.beta1
@@ -216,6 +217,86 @@ class Finn(object):
 
         counter = 1
         start_time = time.time()
+
+        for epoch in range(config.epoch):
+            batch_idx = len(train_doublets) // self.batch_size
+
+            for idx in range(0, batch_idx):
+                batch_images_idx = train_triplets_idx[idx*self.batch_size:(idx+1)*self.batch_size]
+                batch_images = train_triplets[batch_images_idx]
+
+                batch_zs_idx = train_doublets_idx[idx*self.batch_size:(idx+1)*self.batch_size]
+                batch_zs = train_doublets[batch_zs_idx]
+
+                batch_targets = train_singlets[batch_images_idx]
+
+                _, summary_str = self.sess.run([g_optim_l1, self.g_sum_l1],
+                                               feed_dict={
+                                                   self.doublets: batch_zs,
+                                                   self.is_training: True,
+                                                   self.singlets: batch_targets,
+                                                   global_step: epoch
+                                               })
+                self.writer.add_summary(summary_str, counter)
+
+                counter += 1
+
+                errD_fake = self.d_loss_fake.eval({self.doublets: batch_zs, self.is_training: True})
+                errD_real = self.d_loss_real.eval({self.triplets: batch_images, self.is_training: True})
+                errG = self.g_loss.eval({self.doublets: batch_zs, self.is_training: True})
+                errG_l1 = self.l1_loss.eval(
+                    {self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
+                errG_ssim = self.ms_ssim_loss.eval(
+                    {self.doublets: batch_zs, self.singlets: batch_targets, self.is_training: True})
+
+                print(
+                    "Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss_total %.8f, g_loss %.8f, l1_loss %.8f, ms_ssim_loss %.8f" \
+                    % (
+                    epoch, idx, batch_idx, time.time() - start_time, errD_fake + errD_real, errG, errG_l1, errG_ssim))
+
+                if idx % 5 == 0:
+                    summary_str = self.sess.run(self.img_sum,
+                                                feed_dict={
+                                                    self.doublets: train_doublets[
+                                                        train_doublets_idx[0:config.batch_size]],
+                                                    self.is_training: True,
+                                                })
+                    self.writer.add_summary(summary_str, counter)
+
+            if np.mod(epoch, 5) == 0:
+                self.save(config.checkpoint_dir, counter)
+
+                # Save images to file
+                # clipped_G_img = clip_keeping_color(self.G + self.mean_img)
+                clipped_G_img = tf.clip_by_value(self.G + self.mean_img, 0,1)
+
+                G_img = [self.sess.run(clipped_G_img,
+                                           feed_dict = {
+                                               self.doublets: train_doublets[k*self.batch_size:(k+1)*self.batch_size] ,
+                                               self.is_training: True,
+                                           }) for k in range(train_doublets.shape[0] // self.batch_size)]
+
+                G_img = np.stack(G_img, axis=0)
+                print('Saving images...')
+                [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
+                 (epoch, i)), np.squeeze(G_img[i])) for i in range(G_img.shape[0]) ]
+
+                if(epoch == 0):
+                    # Save the targets
+
+                    # Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
+                    Z_imgs = train_doublets
+                    [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpeg" %
+                     (epoch, i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+
+                    # S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
+                    S_imgs = train_singlets
+                    [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
+                     (epoch, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
+
+
+                print('Images saved!')
+
 
         for epoch in range(config.epoch):
             batch_idx = len(train_doublets) // self.batch_size
