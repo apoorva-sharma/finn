@@ -36,11 +36,11 @@ if __name__ == '__main__':
         df_dim = 8
         batch_size = cfg.batch_size
         dropout_prob = 0.5 # probability of keeping
-        l1_weight = 1.
-        ssim_weight = 1.
+        l1_weight = 0.
+        ssim_weight = 0.
         clipping_weight = 1.
         discriminator_weight = 2.
-        writer_path = './l1w_1_ssim_1_cw_1_dw_2'
+        writer_path = './l1w_1_ssim_1_cw_1_dw_2_pre'
         video_path = './datasets/news_cif.y4m'
         finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, clipping_weight, discriminator_weight, writer_path, video_path)
         finn.build_model()

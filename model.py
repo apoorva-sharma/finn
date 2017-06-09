@@ -219,7 +219,7 @@ class Finn(object):
         counter = 1
         start_time = time.time()
 
-        for epoch in range(config.epoch):
+        for epoch in range(config.epoch // 2):
             batch_idx = len(train_doublets) // self.batch_size
 
             for idx in range(0, batch_idx):
