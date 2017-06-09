@@ -197,6 +197,7 @@ class Finn(object):
         self.g_sum = tf.summary.merge([self.g_loss_sum, self.l1_loss_sum, self.ms_ssim_loss_sum, self.clipping_loss_sum,
                                         self.g_loss_total_sum, self.d_loss_fake_sum, self.d_fake_sum])
         self.g_sum_l1 = tf.summary.merge([self.l1_loss_sum])
+        self.g_sum_ms = tf.summary.merge([self.ms_ssim_loss_sum])
         self.d_sum = tf.summary.merge([self.d_loss_real_sum, self.d_real_sum, self.d_loss_total_sum])
         self.img_sum = tf.summary.merge([self.G_image, self.before_image, self.after_image])
         self.writer = tf.summary.FileWriter(self.writer_path + "/" + self.filename, self.sess.graph)
@@ -230,7 +231,7 @@ class Finn(object):
 
                 batch_targets = train_singlets[batch_images_idx]
 
-                _, summary_str = self.sess.run([g_optim_l1, self.g_sum_l1],
+                _, summary_str = self.sess.run([g_optim_ms, self.g_sum_ms],
                                                feed_dict={
                                                    self.doublets: batch_zs,
                                                    self.is_training: True,
