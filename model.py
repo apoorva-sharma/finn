@@ -250,6 +250,13 @@ class Finn(object):
                                                        self.singlets: batch_targets,
                                                        global_step: epoch
                                                    })
+                    _, summary_str = self.sess.run([g_optim, self.g_sum],
+                                                  feed_dict={
+                                                      self.doublets: batch_zs,
+                                                      self.is_training: True,
+                                                      self.singlets: batch_targets,
+                                                      global_step: epoch
+                                                  })
                     self.writer.add_summary(summary_str, counter)
                 else:
                     # Update G Network
@@ -315,6 +322,31 @@ class Finn(object):
 
 
                 print('Images saved!')
+
+    def test(self, config):
+        self.load(config.checkpoint_dir)
+
+        clipped_G_img = tf.clip_by_value(self.G + self.mean_img, 0,1)
+
+        G_img = [self.sess.run(clipped_G_img,
+                   feed_dict = {
+                       self.doublets: self.val_doublets[k*self.batch_size:(k+1)*self.batch_size] ,
+                       self.is_training: True,
+                   }) for k in range(self.val_doublets.shape[0] // self.batch_size)]
+
+        G_img = np.stack(G_img, axis=0)
+
+        print('Saving images...')
+        [ imsave(os.path.join(config.image_dir,"G_valimg%d.jpeg" %
+                 (i)), np.squeeze(G_img[i])) for i in range(G_img.shape[0]) ]
+
+
+        Z_imgs = self.val_doublets
+        [ imsave(os.path.join(config.image_dir,"Z13_valimg%d.jpeg" %
+                     (i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+
+
+
 
 
 
