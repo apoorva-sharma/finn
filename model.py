@@ -304,7 +304,7 @@ class Finn(object):
 
                 G_img = np.stack(G_img, axis=0)
                 print('Saving images...')
-                [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpeg" %
+                [ imsave(os.path.join(config.image_dir,"G_epoch%dimg%d.jpg" %
                  (epoch, i)), np.squeeze(G_img[i])) for i in range(G_img.shape[0]) ]
 
                 if(epoch == 0):
@@ -312,12 +312,12 @@ class Finn(object):
 
                     # Z_imgs = train_doublets[train_doublets_idx[0:config.batch_size]]
                     Z_imgs = train_doublets
-                    [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpeg" %
+                    [ imsave(os.path.join(config.image_dir,"Z13_epoch%dimg%d.jpg" %
                      (epoch, i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
 
                     # S_imgs = train_singlets[train_doublets_idx[0:config.batch_size]]
                     S_imgs = train_singlets
-                    [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpeg" %
+                    [ imsave(os.path.join(config.image_dir,"Z2_epoch%dimg%d.jpg" %
                      (epoch, i)), S_imgs[i] + self.mean_img) for i in range(S_imgs.shape[0]) ]
 
 
@@ -337,13 +337,17 @@ class Finn(object):
         G_img = np.stack(G_img, axis=0)
 
         print('Saving images...')
-        [ imsave(os.path.join(config.image_dir,"G_valimg%d.jpeg" %
+        [ imsave(os.path.join(config.image_dir,"G_valimageno%d.jpg" %
                  (i)), np.squeeze(G_img[i])) for i in range(G_img.shape[0]) ]
 
 
         Z_imgs = self.val_doublets
-        [ imsave(os.path.join(config.image_dir,"Z13_valimg%d.jpeg" %
+        [ imsave(os.path.join(config.image_dir,"Z13_valimgno%d.jpg" %
                      (i)), (Z_imgs[i,:,:,:3] + Z_imgs[i,:,:,3:])/2 + self.mean_img) for i in range(Z_imgs.shape[0]) ]
+
+        Z_imgs = self.val_targets
+        [ imsave(os.path.join(config.image_dir,"Z2_valimagno%d.jpg" %
+                     (i)), Z_imgs[i] + self.mean_img) for i in range(Z_imgs.shape[0]) ]
 
 
 
