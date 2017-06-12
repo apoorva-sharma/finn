@@ -1,4 +1,11 @@
 datasets/
+*.synctex*
+*.aux
+*.fdb*
+*.bbl
+*.blg
+report/*.log
+report/*.fls
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
