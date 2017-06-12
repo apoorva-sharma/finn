@@ -1,3 +1,6 @@
+#!/usr/bin/python
+import sys
+
 import tensorflow as tf
 import numpy as np
 
@@ -79,24 +82,57 @@ def tf_ms_ssim(img1, img2, mean_metric=True, level=5):
 
 def main():
 
+    import glob
+    from scipy.ndimage import imread
 
-    img1 = tf.placeholder(tf.float32, [None, 288, 352, 3], name = 'img1')
+    img_dir = sys.argv[1]
 
-    video_path = './datasets/news_cif.y4m'
+    num_images = (len(glob.glob('./'+img_dir+'/*.png')))//3
 
-    data = generateDataSet(video_path)
+    inputs = []
+    outputs = []
+    targets = []
 
-    mean_img = data["mean_img"]
-    val_targets = data["val_targets"]
+    for i in range(num_images):
+        inputs.append(imread('./'+img_dir+'/'+str(i)+'-inputs.png'))
+        outputs.append(imread('./'+img_dir+'/'+str(i)+'-outputs.png'))
+        targets.append(imread('./'+img_dir+'/'+str(i)+'-targets.png'))
+
+    # inputs = np.array(inputs)
+    # outputs = np.array(outputs)
+    # targets = np.array(targets)
+
+    H,W,C = inputs[0].shape
+    N = len(inputs)
+    print('Num images: %d' % N)
+
+    img1 = tf.placeholder(tf.float32, [None, H, W, C], name = 'img1')
+    img2 = tf.placeholder(tf.float32, [None, H, W, C], name = 'img2')
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True
 
-    with tf.Session(config=run_config) as sess:
-        out = sess.run(tf_ms_ssim(img1, tf.zeros_like(img1)), 
-            feed_dict={img1:val_targets+mean_img})
+    gan_scores = []
+    mssim_scores = []
 
-        print(out)
+    with tf.Session(config=run_config) as sess:
+
+        for i in range(N):
+            out = sess.run(tf_ms_ssim(img1, img2, mean_metric=False), 
+                feed_dict={img1:np.expand_dims(outputs[i],axis=0),img2:np.expand_dims(targets[i],axis=0)})
+
+            gan_scores.append(out)
+
+            out = sess.run(tf_ms_ssim(img1, img2, mean_metric=False), 
+                feed_dict={img1:np.expand_dims(inputs[i],axis=0),img2:np.expand_dims(targets[i],axis=0)})
+
+            mssim_scores.append(out)
+
+    mssim_scores = sorted(mssim_scores, reverse=True)
+    print( 'MSSIM Generator Score: %.5f' % np.mean(mssim_scores[:50]))
+
+    gan_scores = sorted(gan_scores, reverse=True)
+    print( 'MSSIM+GAN Generator Score: %.5f' % np.mean(gan_scores[:50]))
 
 
 
