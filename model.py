@@ -25,7 +25,7 @@ class Finn(object):
 
         self.sess = sess
         self.writer_path = writer_path
-        self.filename = 'yomama'
+        self.filename = 'bus'
         self.video_path = video_path
 
 

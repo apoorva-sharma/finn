@@ -18,9 +18,9 @@ class Config:
         self.d_learning_rate = d_learning_rate
         self.beta1 = beta1
         self.batch_size = batch_size
-        self.checkpoint_dir = './chkpts'
+        self.checkpoint_dir = './bus_all'
         self.train_gan = True
-        self.image_dir = os.path.join(os.getcwd(), 'news_images')
+        self.image_dir = os.path.join(os.getcwd(), 'bus_images')
 
 
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         clipping_weight = 1.
         discriminator_weight = 2.
         writer_path = './l1w_1_ssim_1_cw_1_dw_2'
-        video_path = './datasets/news_cif.y4m'
+        video_path = './datasets/bus_cif.y4m'
         finn = Finn(sess, df_dim, batch_size, dropout_prob, l1_weight, ssim_weight, clipping_weight, discriminator_weight, writer_path, video_path)
         finn.build_model()
         finn.test(cfg)
