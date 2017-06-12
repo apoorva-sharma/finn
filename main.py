@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     with tf.Session(config=run_config) as sess:
 
-        df_dim = 8
+        df_dim = 8.
         batch_size = cfg.batch_size
         dropout_prob = 0.5 # probability of keeping
         l1_weight = 1.
