@@ -25,7 +25,7 @@ class Finn(object):
 
         self.sess = sess
         self.writer_path = writer_path
-        self.filename = 'bus'
+        self.filename = 'football2'
         self.video_path = video_path
 
 
@@ -39,7 +39,7 @@ class Finn(object):
 
         self.input_height = self.train_doublets.shape[1]
         self.input_width = self.train_doublets.shape[2]
-        self.dataset_name = 'abc'
+        self.dataset_name = 'football2'
 
         self.gen_layer_depths = [32, 64, 64, 128]
         self.gen_filter_sizes = [3, 3, 3, 3]
